@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from proxy import app, config, manager
+from backend.manager.proxy import app, config, manager
 
 
 @app.get("/status")
@@ -13,18 +13,6 @@ def status():
     }
 
 
-@app.post("/stop")
-def stop():
-
-    manager.stop()
-
-    return {
-
-        "status": "stopped"
-
-    }
-
-
 @app.get("/models")
 def models():
 
@@ -32,6 +20,6 @@ def models():
 
         "available":
 
-            [config["llama"]["name"]]
+            [config["model"]["name"]]
 
     }

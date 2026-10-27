@@ -1,7 +1,7 @@
 import re
 import tiktoken
 from datetime import datetime
-from API import scrape_query
+from backend.web.firecrawl.API import scrape_query
 
 # -----------------------------------------------------------------------------
 # Tokenizer

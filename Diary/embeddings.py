@@ -3,7 +3,7 @@
 """
 build_faiss_index.py
 
-Builds a multi-resolution FAISS memory index for Jarvis.
+Builds a multi-resolution FAISS memory index for Albert.
 
 For each diary entry:
 

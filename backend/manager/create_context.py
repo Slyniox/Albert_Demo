@@ -7,7 +7,7 @@ from prompt_builder import build_memory_context
 
 
 
-from Retrieval_planner import planner
+from backend.manager.Retrieval_planner import planner
 from build_websearch_context import build_websearch_context
 
 
@@ -67,14 +67,14 @@ def create_context(messages, pipeline, send_event=None):
 
     query = None
 
-    def should_run_planner(messages):
-        if not messages:
+    def should_run_planner(messages, pipeline):
+        if not messages or pipeline.type == "fast":
             return False
         return messages[-1].get("role") == "user"
 
 
     def get_planner_query(messages):
-        if not should_run_planner(messages):
+        if not should_run_planner(messages, pipeline):
             return None
         return messages[-1].get("content", "")
     
@@ -117,6 +117,8 @@ def create_context(messages, pipeline, send_event=None):
     else:
         prompt = current_query
 
+    if len(prompt) > pipeline.max_planner_prompt_length:
+        return ("", True)
 
     ###########################################################################
     # Planner

@@ -1,38 +1,8 @@
 {
-  "llama": {
+  "model": {
     "name": "qwen3.6-35b-a3b",
-    "llama_dir": "/home/balth/Jarvis/llama.cpp",
-    "model": "/home/balth/Jarvis/models/Qwen 3.6 35b/Qwen3.6-35B-A3B-Q4_K_S-4.22bpw.gguf",
-    "host": "0.0.0.0",
-    "client_host": "127.0.0.1",
-    "port": 8081,
-    "ctx": 12000,
-    "ngl": 99,
-    "args": [
-      "-fa", "1",
-      "--cache-type-k", "q8_0",
-      "--cache-type-v", "q8_0",
-      "--jinja",
-      "--chat-template-file", "/home/balth/Jarvis/models/Qwen 3.6 35b/chat_template.jinja",
-      "--load-mode", "none",
-      "--temp", "0.7",
-      "--top-p", "0.95",
-      "--min-p", "0.05",
-      "--presence-penalty", "0.5",
-      "--repeat-penalty", "1.05",
-      "-ncmoe", "32",
-      "-b", "4096",
-      "-ub", "4096",
-      "--reasoning-preserve",
-      "--cache-ram", "2048",
-      "--no-mmproj",
-      "--spec-type", "ngram-mod",
-      "--spec-ngram-mod-n-match", "45",
-      "--spec-ngram-mod-n-min", "30",
-      "--spec-ngram-mod-n-max", "64",
-      "--reasoning-budget", "1000",
-      "--reasoning-budget-message", "\"I have reasoned enough, I will now provide an answer.\""
-    ]
+    "llama_dir": "LLAMA_DIR",
+    "base_url": "http://127.0.0.1:8081"
   },
   "chat_proxy": {
     "host": "0.0.0.0",
@@ -51,7 +21,8 @@
       "max_full_entries": 5,
       "max_summaries": 3,
       "max_diary_queries": 3,
-      "max_web_queries": 3
+      "max_web_queries": 3,
+      "max_planner_prompt_length": 50000
     },
     "fast": {
       "type": "fast",
@@ -59,7 +30,8 @@
       "max_full_entries": 0,
       "max_summaries": 0,
       "max_diary_queries": 0,
-      "max_web_queries": 0
+      "max_web_queries": 0,
+      "max_planner_prompt_length": 0 
     }
   },
   "web": {

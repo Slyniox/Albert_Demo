@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Jarvis Voice Proxy — Nemotron 3.5 ASR Streaming 0.6B
+Albert Voice Proxy — Nemotron 3.5 ASR Streaming 0.6B
 
 Browser :9100
     -> this proxy
@@ -10,10 +10,10 @@ Browser :9100
 And, when a final transcript is produced:
 
     final transcript
-        -> Jarvis /v1/chat/completions
+        -> Albert /v1/chat/completions
         -> pipeline="fast"
-        -> Jarvis retrieval pipeline
-        -> llama-server
+        -> Albert retrieval pipeline
+        -> OpenAI-compatible model server
         -> streamed response
         -> browser
 
@@ -66,13 +66,13 @@ voice_config = config["voice"]
 tts_config = voice_config["tts"]
 
 from tts_stream import (
-    stream_jarvis_to_tts as _stream_jarvis_to_tts,
+    stream_albert_to_tts as stream_albert_to_tts,
 )
 
 
 
 
-SYSTEM_PROMPT = """Tu es Jarvis, un assistant vocal. Tu réponds en français de manière naturelle, concise et conversationnelle.
+SYSTEM_PROMPT = """Tu es Albert, un assistant vocal. Tu réponds en français de manière naturelle, concise et conversationnelle.
 
 Règles pour le mode vocal :
 
@@ -100,15 +100,15 @@ PORT = voice_config["port"]
 DEFAULT_INPUT_SAMPLE_RATE = int(voice_config["input_sample_rate"])
 NEMO_REALTIME_URL = voice_config["realtime_stt_url"]
 
-# Force French for Jarvis rather than spending latency on language detection.
+# Force French for Albert rather than spending latency on language detection.
 NEMO_LANGUAGE = voice_config["language"]
 
 # 0 = browser-controlled end-of-utterance via {"type":"end"}.
 VOICE_ENDPOINTING_MS = int(voice_config["endpointing_ms"])
 
-# Existing Jarvis HTTP proxy.
+# Existing Albert HTTP proxy.
 chat_config = config["chat_proxy"]
-JARVIS_URL = (
+ALBERT_URL = (
     f"http://{chat_config['client_host']}:{chat_config['port']}"
     "/v1/chat/completions"
 )
@@ -216,12 +216,12 @@ async def send_json(ws, payload):
 
 
 ###############################################################################
-# Jarvis HTTP client
+# Albert HTTP client
 ###############################################################################
 
-class JarvisClient:
+class AlbertClient:
     """
-    Persistent HTTP client for the existing Jarvis API.
+    Persistent HTTP client for the existing Albert API.
 
     Voice transcripts are sent here instead of calling create_context()
     directly. This keeps the voice proxy independent from the retrieval
@@ -243,8 +243,8 @@ class JarvisClient:
         )
 
         log.info(
-            "Jarvis API: %s",
-            JARVIS_URL,
+            "Albert API: %s",
+            ALBERT_URL,
         )
 
     async def close(self):
@@ -254,13 +254,13 @@ class JarvisClient:
 
     async def stream(self, text, websocket):
         """
-        Send one transcript to Jarvis and forward the streamed response
+        Send one transcript to Albert and forward the streamed response
         to the browser.
         """
 
         if self.session is None:
             raise RuntimeError(
-                "Jarvis HTTP client is not initialized"
+                "Albert HTTP client is not initialized"
             )
 
         payload = {
@@ -283,16 +283,16 @@ class JarvisClient:
             "stream": True,
         }
 
-        log.info("[%s] -> Jarvis FAST request", websocket.remote_address)
+        log.info("[%s] -> Albert FAST request", websocket.remote_address)
 
         async with self.session.post(
-            JARVIS_URL,
+            ALBERT_URL,
             json=payload,
         ) as response:
 
             response.raise_for_status()
 
-            await stream_jarvis_to_tts(
+            await stream_albert_to_tts(
                 websocket,
                 response.content,
             )
@@ -419,10 +419,10 @@ class NemotronSession:
 async def read_nemotron(
     websocket,
     session,
-    jarvis,
+    albert,
 ):
     """
-    Translate NeMo-Speech.cpp realtime events to Jarvis's browser protocol.
+    Translate NeMo-Speech.cpp realtime events to Albert's browser protocol.
 
     When a final transcript arrives:
 
@@ -430,7 +430,7 @@ async def read_nemotron(
             ↓
         browser result
             ↓
-        Jarvis /v1/chat/completions
+        Albert /v1/chat/completions
             ↓
         assistant_delta events
     """
@@ -491,18 +491,18 @@ async def read_nemotron(
             )
 
             ###################################################################
-            # Send transcript to Jarvis.
+            # Send transcript to Albert.
             #
             # IMPORTANT:
             #
             # create_task() means the Nemotron reader is NOT blocked while
-            # Jarvis is thinking/generating.
+            # Albert is thinking/generating.
             ###################################################################
 
             asyncio.create_task(
-                process_jarvis_request(
+                process_albert_request(
                     websocket,
-                    jarvis,
+                    albert,
                     text,
                 )
             )
@@ -540,12 +540,12 @@ async def read_nemotron(
 
 
 ###############################################################################
-# Jarvis request task
+# Albert request task
 ###############################################################################
 
-async def process_jarvis_request(
+async def process_albert_request(
     websocket,
-    jarvis,
+    albert,
     text,
 ):
 
@@ -566,8 +566,8 @@ async def process_jarvis_request(
     }
 
     try:
-        async with jarvis.session.post(
-            JARVIS_URL,
+        async with albert.session.post(
+            ALBERT_URL,
             json=payload,
         ) as response:
 
@@ -583,7 +583,7 @@ async def process_jarvis_request(
                 },
             )
 
-            await stream_jarvis_to_tts(
+            await stream_albert_to_tts(
                 websocket,
                 response.content,
             )
@@ -598,7 +598,7 @@ async def process_jarvis_request(
     except Exception as exc:
 
         log.exception(
-            "Jarvis/TTS pipeline failed"
+            "Albert/TTS pipeline failed"
         )
 
         await send_json(
@@ -615,7 +615,7 @@ async def process_jarvis_request(
 
 async def handle_client(
     websocket,
-    jarvis,
+    albert,
 ):
     client = websocket.remote_address
 
@@ -628,8 +628,8 @@ async def handle_client(
     session = None
     reader_task = None
 
-    # Keep track of Jarvis requests belonging to this browser.
-    jarvis_tasks = set()
+    # Keep track of Albert requests belonging to this browser.
+    albert_tasks = set()
 
     try:
         #######################################################################
@@ -656,7 +656,7 @@ async def handle_client(
             read_nemotron(
                 websocket,
                 session,
-                jarvis,
+                albert,
             )
         )
 
@@ -752,7 +752,7 @@ async def handle_client(
                     read_nemotron(
                         websocket,
                         session,
-                        jarvis,
+                        albert,
                     )
                 )
 
@@ -850,7 +850,7 @@ async def main():
 
     log.info("=" * 64)
     log.info(
-        "JARVIS VOICE PROXY — NEMOTRON 3.5 ASR"
+        "ALBERT VOICE PROXY — NEMOTRON 3.5 ASR"
     )
     log.info("=" * 64)
 
@@ -866,8 +866,8 @@ async def main():
     )
 
     log.info(
-        "Jarvis  : %s",
-        JARVIS_URL,
+        "Albert  : %s",
+        ALBERT_URL,
     )
 
     log.info(
@@ -896,12 +896,12 @@ async def main():
     log.info("=" * 64)
 
     ###########################################################################
-    # Persistent Jarvis HTTP client
+    # Persistent Albert HTTP client
     ###########################################################################
 
-    jarvis = JarvisClient()
+    albert = AlbertClient()
 
-    await jarvis.start()
+    await albert.start()
 
     ###########################################################################
     # WebSocket server
@@ -910,7 +910,7 @@ async def main():
     async def client_handler(websocket):
         await handle_client(
             websocket,
-            jarvis,
+            albert,
         )
 
     try:
@@ -927,7 +927,7 @@ async def main():
             await asyncio.Future()
 
     finally:
-        await jarvis.close()
+        await albert.close()
 
 
 def synthesize_supertonic(text: str) -> bytes:
@@ -941,13 +941,13 @@ async def synthesize_supertonic_async(text: str) -> bytes:
     )
 
 
-async def stream_jarvis_to_tts(
+async def stream_albert_to_tts(
     websocket,
-    jarvis_session,
+    albert_session,
 ):
-    await _stream_jarvis_to_tts(
+    await stream_albert_to_tts(
         websocket,
-        jarvis_session,
+        albert_session,
         synthesize_async=synthesize_supertonic_async,
         send_json=send_json,
     )

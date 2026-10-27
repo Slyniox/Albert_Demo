@@ -1,4 +1,4 @@
-"""Turn a Jarvis SSE response into ordered browser text and PCM frames."""
+"""Turn a Albert SSE response into ordered browser text and PCM frames."""
 
 import asyncio
 import json
@@ -84,14 +84,14 @@ async def tts_worker(
             tts_queue.task_done()
 
 
-async def stream_jarvis_to_tts(
+async def stream_albert_to_tts(
     websocket,
-    jarvis_session,
+    albert_session,
     *,
     synthesize_async,
     send_json,
 ):
-    """Forward Jarvis text deltas and synthesize sentence-sized PCM chunks."""
+    """Forward Albert text deltas and synthesize sentence-sized PCM chunks."""
     tts_queue = asyncio.Queue()
     tts_task = asyncio.create_task(
         tts_worker(websocket, tts_queue, synthesize_async, send_json)
@@ -99,7 +99,7 @@ async def stream_jarvis_to_tts(
     text_buffer = ""
 
     try:
-        async for raw_line in jarvis_session:
+        async for raw_line in albert_session:
             if not raw_line:
                 continue
 

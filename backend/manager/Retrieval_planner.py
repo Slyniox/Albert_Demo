@@ -3,15 +3,15 @@
 """
 planner.py
 
-Standalone planner for Jarvis.
+Standalone planner for Albert.
 
-The planner sends the user's query to the configured Qwen 3.6 model and expects a JSON
+The planner sends the user's query to the configured OpenAI-compatible model and expects a JSON
 execution plan in return.
 
 Requirements:
     pip install requests
 
-Assumes llama-server is running on:
+Assumes a compatible model server is running on:
 
     http://localhost:8081
 """
@@ -25,12 +25,9 @@ CONFIG_FILE = Path(__file__).with_name("config.json")
 with CONFIG_FILE.open("r", encoding="utf-8") as config_file:
     config = json.load(config_file)
 
-llama_config = config["llama"]
+model_config = config["model"]
 planner_config = config["planner"]
-LLAMA_SERVER = (
-    f"http://{llama_config['client_host']}:{llama_config['port']}"
-    "/v1/chat/completions"
-)
+MODEL_SERVER = f"{model_config['base_url'].rstrip('/')}/v1/chat/completions"
 
 PLANNER_RESPONSE_SCHEMA = {
     "type": "object",
@@ -82,17 +79,20 @@ def planner(user_query: str, prompt: str) -> dict:
         "stream": False,
 
         "chat_template_kwargs": {
-          "enable_thinking": False
+            "enable_thinking": False
         },
 
         "response_format": {
             "type": "json_schema",
-            "json_schema": PLANNER_RESPONSE_SCHEMA,
+            "json_schema": {
+                "name": "planner_response",
+                "schema": PLANNER_RESPONSE_SCHEMA,
+            },
         },
     }
 
     response = requests.post(
-        LLAMA_SERVER,
+        MODEL_SERVER,
         json=payload,
         timeout=planner_config["timeout_seconds"],
     )

@@ -3,7 +3,7 @@
 """
 reranker.py
 
-Web reranker for Jarvis.
+Web reranker for Albert.
 
 Input:
     query (str)
@@ -18,7 +18,7 @@ Output:
 """
 reranker.py
 
-Web reranker for Jarvis.
+Web reranker for Albert.
 
 Input:
     query (str)
@@ -29,6 +29,7 @@ Output:
 """
 
 import torch
+import time
 import sys
 from pathlib import Path
 
@@ -43,7 +44,7 @@ DEVICE = "cuda"
 
 MAX_LENGTH = 400
 
-BATCH_SIZE = 1
+BATCH_SIZE = 70
 
 MAX_CHUNKS = 4
 
@@ -59,13 +60,17 @@ def rerank(query, documents, top_k=MAX_CHUNKS, min_score=MIN_SCORE):
 
     ###########################################################################
 
+    
+
     pairs = [
         (query, doc["text"])
         for doc in documents
     ]
 
     scores = []
-
+    
+    t0 = time.perf_counter()
+    
     for i in range(0, len(pairs), BATCH_SIZE):
 
         batch = pairs[i:i + BATCH_SIZE]
@@ -89,6 +94,13 @@ def rerank(query, documents, top_k=MAX_CHUNKS, min_score=MIN_SCORE):
         batch_scores = outputs.logits.squeeze(-1)
 
         scores.extend(batch_scores.cpu().tolist())
+
+
+        t1 = time.perf_counter()
+        
+        print(
+            f"Reranker inference: {t1 - t0:.2f}s"
+        )
 
     ###########################################################################
 

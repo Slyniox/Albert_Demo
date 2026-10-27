@@ -7,7 +7,7 @@ import {
   deleteConversation,
   makeTitle,
 } from "./storage.js";
-import { ChatUI } from "./ui.js";
+import { ChatUI } from "./ui.js?v=20261013-ux2";
 
 const ui = new ChatUI();
 
@@ -16,8 +16,8 @@ let activeConversation = null;
 let abortController = null;
 let generationToken = null;
 
-const SYSTEM_PROMPT_KEY = "jarvis-system-prompt";
-const PIPELINE_KEY = "jarvis-pipeline";
+const SYSTEM_PROMPT_KEY = "albert-system-prompt";
+const PIPELINE_KEY = "albert-pipeline";
 
 function loadSystemPrompt() {
   return localStorage.getItem(SYSTEM_PROMPT_KEY) || "";
@@ -267,7 +267,7 @@ async function generateAssistant() {
       }
     } else if (generationToken === token) {
       activity.fail(error.message);
-      assistant.error(`Unable to reach Jarvis: ${error.message}`);
+      assistant.error(`Unable to reach Albert: ${error.message}`);
     }
   } finally {
     if (generationToken === token) {
@@ -306,33 +306,140 @@ async function sendMessage(text) {
 function renameActiveConversation() {
   if (!activeConversation || abortController) return;
 
-  const proposed = window.prompt("Conversation name:", activeConversation.title || "");
-  if (proposed === null) return;
+  const dialog = document.getElementById("rename-dialog");
+  const input = document.getElementById("rename-input");
+  const error = document.getElementById("rename-error");
+  if (!dialog || !input) return;
 
-  const name = proposed.trim();
-  if (!name) return;
-
-  activeConversation.title = name.slice(0, 100);
-  activeConversation.updatedAt = Date.now();
-  conversations = upsertConversation(activeConversation);
-  ui.setTitle(activeConversation.title);
-  ui.renderHistory(conversations, activeConversation.id);
+  input.value = activeConversation.title || "";
+  if (error) error.hidden = true;
+  dialog.showModal();
+  input.focus();
+  input.select();
 }
 
 function wireEvents() {
   const effortSelector = document.getElementById("effort-selector");
+  const effortMenuButton = document.getElementById("effort-menu-button");
+  const effortCurrentLabel = document.getElementById("effort-current-label");
+  const effortMenu = document.getElementById("effort-menu");
+  const effortSelectorWrap = document.querySelector(".effort-selector-wrap");
+  const renameDialog = document.getElementById("rename-dialog");
+  const renameForm = document.getElementById("rename-form");
+  const renameInput = document.getElementById("rename-input");
+  const renameError = document.getElementById("rename-error");
   const systemPromptButton = document.getElementById("system-prompt-button");
   const systemPromptPanel = document.getElementById("system-prompt-panel");
   const systemPromptInput = document.getElementById("system-prompt-input");
   const systemPromptSave = document.getElementById("system-prompt-save");
   const systemPromptClear = document.getElementById("system-prompt-clear");
 
+  const effortOptions = [...(effortMenu?.querySelectorAll("[data-effort]") || [])];
+  const setEffortMenuOpen = (open) => {
+    if (!effortMenu || !effortMenuButton) return;
+    effortMenu.hidden = !open;
+    effortMenuButton.setAttribute("aria-expanded", String(open));
+  };
+  const updateEffortMenu = () => {
+    if (!effortSelector) return;
+    const value = effortSelector.value === "fast" ? "fast" : "normal";
+    const label = value === "fast" ? "Fast" : "Normal";
+    if (effortCurrentLabel) effortCurrentLabel.textContent = label;
+    effortMenuButton?.setAttribute("aria-label", `Response mode: ${label}`);
+    for (const option of effortOptions) {
+      const selected = option.dataset.effort === value;
+      option.setAttribute("aria-selected", String(selected));
+      option.classList.toggle("selected", selected);
+    }
+  };
+  const selectEffort = (value) => {
+    if (!effortSelector || !["normal", "fast"].includes(value)) return;
+    effortSelector.value = value;
+    effortSelector.dispatchEvent(new Event("change", { bubbles: true }));
+    setEffortMenuOpen(false);
+    effortMenuButton?.focus();
+  };
+
   if (effortSelector) {
     effortSelector.value = loadPipeline();
+    updateEffortMenu();
     effortSelector.addEventListener("change", () => {
       savePipeline(effortSelector.value);
+      updateEffortMenu();
     });
   }
+
+  effortMenuButton?.addEventListener("click", () => {
+    const open = effortMenuButton.getAttribute("aria-expanded") !== "true";
+    setEffortMenuOpen(open);
+    if (open) effortOptions.find(option => option.dataset.effort === effortSelector?.value)?.focus();
+  });
+
+  effortMenu?.addEventListener("click", event => {
+    const option = event.target.closest("[data-effort]");
+    if (option) selectEffort(option.dataset.effort);
+  });
+
+  effortMenuButton?.addEventListener("keydown", event => {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    event.preventDefault();
+    setEffortMenuOpen(true);
+    const index = event.key === "ArrowDown" ? 0 : effortOptions.length - 1;
+    effortOptions[index]?.focus();
+  });
+
+  effortMenu?.addEventListener("keydown", event => {
+    const index = effortOptions.indexOf(document.activeElement);
+    let nextIndex = index;
+    if (event.key === "ArrowDown") nextIndex = (index + 1) % effortOptions.length;
+    else if (event.key === "ArrowUp") nextIndex = (index - 1 + effortOptions.length) % effortOptions.length;
+    else if (event.key === "Home") nextIndex = 0;
+    else if (event.key === "End") nextIndex = effortOptions.length - 1;
+    else if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      document.activeElement?.click();
+      return;
+    } else if (event.key === "Tab") {
+      setEffortMenuOpen(false);
+      return;
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      setEffortMenuOpen(false);
+      effortMenuButton?.focus();
+      return;
+    } else return;
+    event.preventDefault();
+    effortOptions[nextIndex]?.focus();
+  });
+
+  document.addEventListener("pointerdown", event => {
+    if (effortSelectorWrap && !effortSelectorWrap.contains(event.target)) setEffortMenuOpen(false);
+  });
+
+  renameForm?.addEventListener("submit", event => {
+    event.preventDefault();
+    if (!activeConversation || abortController || !renameInput) return;
+
+    const name = renameInput.value.trim();
+    if (!name) {
+      if (renameError) renameError.hidden = false;
+      renameInput.focus();
+      return;
+    }
+
+    activeConversation.title = name.slice(0, 100);
+    activeConversation.updatedAt = Date.now();
+    conversations = upsertConversation(activeConversation);
+    ui.setTitle(activeConversation.title);
+    ui.renderHistory(conversations, activeConversation.id);
+    renameDialog?.close();
+  });
+
+  renameInput?.addEventListener("input", () => {
+    if (renameError) renameError.hidden = true;
+  });
+
+  document.getElementById("rename-cancel")?.addEventListener("click", () => renameDialog?.close());
 
   if (systemPromptInput) {
     systemPromptInput.value = loadSystemPrompt();
@@ -409,7 +516,7 @@ function wireEvents() {
   ui.title.addEventListener("click", renameActiveConversation);
   ui.title.title = "Rename conversation";
 
-  document.getElementById("open-sidebar").addEventListener("click", () => ui.openSidebar());
+  document.getElementById("open-sidebar").addEventListener("click", () => ui.toggleSidebar());
   document.getElementById("sidebar-backdrop").addEventListener("click", () => ui.closeSidebar());
 
   ui.history.addEventListener("click", event => {
@@ -626,10 +733,12 @@ function stopVoice(){
   if(voiceStream){voiceStream.getTracks().forEach(t=>t.stop());voiceStream=null}
   if(voiceSocket?.readyState===WebSocket.OPEN)try{voiceSocket.send(JSON.stringify({type:"end"}))}catch{}
 }
-function openVoice(){document.getElementById("voice-mode-page")?.classList.add("visible");document.body.classList.add("voice-mode-open");}
-function closeVoice(){stopVoice();document.getElementById("voice-mode-page")?.classList.remove("visible");document.body.classList.remove("voice-mode-open");}
+function openVoice(){const page=document.getElementById("voice-mode-page");page?.classList.add("visible");page?.setAttribute("aria-hidden","false");document.body.classList.add("voice-mode-open");}
+function closeVoice(){stopVoice();const page=document.getElementById("voice-mode-page");page?.classList.remove("visible");page?.setAttribute("aria-hidden","true");document.body.classList.remove("voice-mode-open");}
 function wireVoice(){
-  document.getElementById("voice-mode-button")?.addEventListener("click",openVoice);
+  document.addEventListener("click", event => {
+    if (event.target.closest("[data-open-voice]")) openVoice();
+  });
   document.getElementById("voice-back-button")?.addEventListener("click",closeVoice);
   const b=document.getElementById("voice-hold-button");if(!b)return;
   const down=e=>{e.preventDefault();b.setPointerCapture?.(e.pointerId);startVoice()};

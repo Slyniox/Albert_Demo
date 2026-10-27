@@ -21,7 +21,7 @@ def search_searxng(query: str, max_results: int = 1):
             "format": "json",
         },
         headers={
-            "User-Agent": "Jarvis/1.0",
+            "User-Agent": "Albert/1.0",
         },
         timeout=15,
     )
@@ -50,7 +50,7 @@ def search_firecrawl(query: str, max_results: int = 6):
         result = firecrawl.search(
             query,
             limit=max_results,
-            exclude_domains=["reddit.com", "youtube.com", "llm-stats.com"],
+            exclude_domains=["youtube.com"],
         )
         urls = []
         for item in result.web:

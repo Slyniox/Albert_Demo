@@ -1,4 +1,4 @@
-const STORAGE_KEY = "jarvis.conversations.v1";
+const STORAGE_KEY = "albert.conversations.v1";
 
 function now() {
   return Date.now();

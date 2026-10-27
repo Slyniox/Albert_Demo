@@ -1,4 +1,4 @@
-"""Prepare a chat request with Jarvis retrieval context and model settings."""
+"""Prepare a chat request with Albert retrieval context and model settings."""
 
 
 def add_retrieval_context(messages, retrieval_context):

@@ -8,15 +8,13 @@ import httpx
 from fastapi import FastAPI, Request
 from fastapi.responses import Response, StreamingResponse
 
-from contextlib import asynccontextmanager
-
 from launcher import load_config, manager
 from create_context import create_context
-from request_context import prepare_model_request
+from backend.manager.request_context import prepare_model_request
 
 
 
-FAST_PLANNER_PROMPT = """Tu es le planificateur RAPIDE de Jarvis.
+FAST_PLANNER_PROMPT = """Tu es le planificateur RAPIDE de Albert.
 
 Ta mission est de décider si la question de l'utilisateur nécessite :
 - une recherche dans son journal ;
@@ -66,9 +64,9 @@ Contraintes :
 
 
 PLANNER_PROMPT = """
-You are Jarvis's retrieval planner.
+You are Albert's retrieval planner.
 
-Your ONLY tasks are to decide whether reasoning is required and wether Jarvis needs to search:
+Your ONLY tasks are to decide whether reasoning is required and wether Albert needs to search:
 - the user's diary
 - the web
 
@@ -315,9 +313,7 @@ Output:
 ################################################################################
 
 config = load_config()
-LLAMA_URL = (
-    f"http://{config['llama']['client_host']}:{config['llama']['port']}"
-)
+MODEL_URL = config["model"]["base_url"].rstrip("/")
 
 
 
@@ -327,11 +323,13 @@ from dataclasses import dataclass
 @dataclass
 class PipelineConfig:
     planner_prompt: str
+    type: str
     top_k: int
     max_full_entries: int
     max_summaries: int
     max_diary_queries: int
     max_web_queries: int
+    max_planner_prompt_length: int
 
 
 NORMAL_PIPELINE = PipelineConfig(
@@ -388,24 +386,16 @@ def send_status(send_event, stage, state="started", detail=None):
 
 
 ################################################################################
-# Stopping
+# Startup
 ################################################################################
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
+app = FastAPI()
 
-    print("[Proxy] Starting...")
 
+@app.on_event("startup")
+async def check_model_api():
+    print("[Proxy] Checking configured model API...")
     await asyncio.to_thread(manager.ensure)
-
-    yield
-
-    print("[Proxy] Shutting down...")
-
-    manager.stop()
-
-
-app = FastAPI(lifespan=lifespan)
 
 
 ################################################################################
@@ -417,7 +407,7 @@ async def normal_completion(body):
     async with httpx.AsyncClient(timeout=None) as client:
 
         response = await client.post(
-            f"{LLAMA_URL}/v1/chat/completions",
+            f"{MODEL_URL}/v1/chat/completions",
             json=body,
         )
 
@@ -561,18 +551,18 @@ async def stream_completion(body, pipeline):
                 body,
                 memory_context,
                 need_reasoning,
-                config["llama"]["name"],
+                config["model"]["name"],
             )
 
             ###################################################################
-            # Connect to llama.cpp
+            # Connect to the configured OpenAI-compatible model API
             ###################################################################
 
             client = httpx.AsyncClient(timeout=None)
 
             request = client.build_request(
                 "POST",
-                f"{LLAMA_URL}/v1/chat/completions",
+                f"{MODEL_URL}/v1/chat/completions",
                 json=body,
             )
 
@@ -598,7 +588,7 @@ async def stream_completion(body, pipeline):
                 ).encode()
 
             ###################################################################
-            # Forward llama.cpp stream
+            # Forward the model API stream
             ###################################################################
 
             async for chunk in response.aiter_bytes():
@@ -651,7 +641,7 @@ async def stream_completion(body, pipeline):
                 context_task.cancel()
 
             ###################################################################
-            # Close llama connection
+            # Close the model API connection
             ###################################################################
 
             if response is not None:
@@ -690,11 +680,9 @@ async def chat(request: Request):
     # Model
     ###########################################################################
 
-    model = config["llama"]["name"]
+    model = config["model"]["name"]
 
     print(f"[Proxy] Selected model: {model}")
-
-    manager.ensure()
 
     ###########################################################################
     # Pipeline
@@ -733,7 +721,7 @@ async def chat(request: Request):
         body,
         memory_context,
         need_reasoning,
-        config["llama"]["name"],
+        config["model"]["name"],
     )
 
     ###########################################################################
@@ -754,9 +742,9 @@ def models():
         "object": "list",
         "data": [
             {
-                "id": "jarvis",
+                "id": "albert",
                 "object": "model",
-                "owned_by": "jarvis",
+                "owned_by": "albert",
             }
         ],
     }
@@ -767,11 +755,17 @@ def models():
 ################################################################################
 
 @app.get("/health")
-def health():
+async def health():
+
+    try:
+        await asyncio.to_thread(manager.ensure)
+        running = manager.running()
+    except RuntimeError:
+        running = None
 
     return {
         "proxy": "ok",
-        "running": manager.running(),
+        "running": running,
     }
 
 
@@ -783,7 +777,7 @@ def health():
 def root():
 
     return {
-        "status": "Jarvis Proxy Running"
+        "status": "Albert Proxy Running"
     }
 
 

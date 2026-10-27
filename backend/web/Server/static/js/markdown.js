@@ -241,11 +241,27 @@ function renderBlock(block) {
         i++;
       }
 
-      const lang = language
-        ? `<span class="code-language">${escapeHtml(language)}</span>`
+      const normalizedLanguage = language.toLowerCase();
+      const languageLabel = language || "code";
+      const htmlDownload = normalizedLanguage === "html" || normalizedLanguage === "htm";
+      const downloadButton = htmlDownload
+        ? '<button class="code-action" type="button" data-download-code aria-label="Download HTML file" title="Download HTML file"></button>'
         : "";
 
-      html += `<div class="code-block">${lang}<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre></div>`;
+      html += `<section class="code-block" data-language="${escapeHtml(normalizedLanguage)}">
+        <div class="code-block-header">
+          <button class="code-collapse-button" type="button" data-toggle-code aria-expanded="true" title="Collapse code">
+            <span class="code-language">${escapeHtml(languageLabel)}</span>
+            <span class="code-collapse-label">Collapse</span>
+            <span class="code-collapse-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="code-block-actions">
+            ${downloadButton}
+            <button class="code-action" type="button" data-copy-code aria-label="Copy code" title="Copy code"></button>
+          </div>
+        </div>
+        <pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>
+      </section>`;
       continue;
     }
 

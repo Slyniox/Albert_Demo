@@ -1,9 +1,9 @@
 import requests
 
-from API import search_firecrawl, scrape_urls
-from chunking import process_web_pages
-from chunk_reranker import rerank
-from web_fetcher import fetch_readable_many
+from backend.web.firecrawl.API import search_firecrawl, scrape_urls
+from backend.web.firecrawl.chunking import process_web_pages
+from backend.web.firecrawl.chunk_reranker import rerank
+from backend.web.firecrawl.web_fetcher import fetch_readable_many
 
 import time
 
@@ -14,7 +14,7 @@ import time
 LLAMA_SERVER = "http://localhost:8081/v1/chat/completions"
 
 SYSTEM_PROMPT = """
-You are Jarvis.
+You are Albert.
 
 You have access to web documents retrieved for the user's question.
 

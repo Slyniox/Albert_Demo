@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from model_manager import ModelManager
+from backend.manager.model_connection import ModelConnection
 
 CONFIG_FILE = Path(__file__).parent / "config.json"
 
@@ -16,4 +16,4 @@ def load_config():
 
 config = load_config()
 
-manager = ModelManager(config["llama"])
+manager = ModelConnection(config["model"])

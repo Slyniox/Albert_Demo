@@ -1,9 +1,9 @@
-# Jarvis
+# Albert
 
 > A local AI assistant and proof of concept for **speculative retrieval**:
 > using a lightweight planning step to predict what external context an LLM will need and retrieve it before the main generation step.
 
-Jarvis is a personal AI system built around local LLM inference
+Albert is a personal AI system built around local LLM inference
 with llama.cpp. It combines conversational AI with optional
 retrieval from a personal knowledge base and the web.
 
@@ -32,19 +32,19 @@ the benefits of tool-augmented generation.
                          |    retrieval)   |
                          └───┬────────┬────┘
                              │        │
-                    ┌────────▼───┐ ┌──▼──────────┐
-                    │ Diary / RAG│ │ Web Search  │
-                    │FAISS+Rerank│ │  Firecrawl  │
-                    └──────┬─────┘ └──────┬──────┘
-                           │               │
-                           └───────┬───────┘
+                    ┌────────▼───┐ ┌──▼───────────────────┐
+                    │ Diary / RAG│ │       Web Search     │
+                    │FAISS+Rerank│ │  Firecrawl + fastCRW │
+                    └──────┬─────┘ └──────┬───────────────┘
+                           │              │
+                           └───────┬──────┘
                                    ▼
                           ┌────────────────┐
                           │   llama.cpp    │
                           │   Local LLM    │
                           └────────────────┘
 ```
-The chat proxy starts the configured llama.cpp model and waits for its health endpoint before it serves client requests. The planner uses the same model endpoint. The voice proxy sends transcripts to the chat API.
+The chat proxy starts the configured llama.cpp model and waits for its health endpoint before it serves client requests. The Normal pipeline's planner uses the same model endpoint. The voice proxy sends transcripts to the chat API through the Fast pipeline.
 
 ## Speculative Retrieval
 
@@ -53,11 +53,15 @@ generation model begins answering.
 
 Instead of the main model spending valuable inference time deciding on how to call tools,
 a lightweight planner call is made to predict what context is likely
-to be needed and performs retrieval before generation starts.
+to be needed and performs retrieval before generation starts. If the planner prompt exceeds the configured
+`max_planner_prompt_length`, planning and retrieval are skipped and the request
+goes directly to the main model with thinking enabled.
+
 Retrieved content is then embedded into the main model's context before generation begins.
 
-In testing on compute-limited hardware, this approach reduced the time to
-first useful token by up to 50%.
+
+In testing on compute-limited hardware, this approach reduced the time to first useful token by up to 50%.
+Tests were done on a variety of RAG and Web retrieval prompts of varying length : for short requests requiring simple retrieval, time to first useful token dropped by 50% with no quality degradation. On longer prompts the speed overhead slowly fades out, due to prompt processing speed. Depending on your hardware, speculative retrieval becomes slower than base with very long contexts. Test for your system and set `max_planner_prompt_length` to disable the planner on long requests.
 
 ## Known project status : 🚧 Active development
 
@@ -67,10 +71,10 @@ This repository represents a working personal system with components at differen
 ## What it does
 
 - Exposes an OpenAI-compatible `POST /v1/chat/completions` endpoint with streamed responses.
-- Offers **Normal** and **Fast** chat policies. Both use the same planner, diary retrieval, web retrieval, and model infrastructure, with different retrieval limits and prompts.
+- Offers **Normal** and **Fast** chat pipelines. Normal uses the planner and can retrieve diary or web context. Fast bypasses the planner and retrieval and disables model thinking.
 - Lets a planner decide whether a request needs diary context, web context, and/or additional model reasoning.
 - Retrieves relevant diary entries from a SQLite database and FAISS index, with metadata summaries, person profiles, and reranking.
-- Searches web pages through Firecrawl, then extracts, chunks, and reranks page content locally for model context.
+- Searches web pages through Firecrawl, then extracts, chunks, and reranks page content locally with fastCRW for model context.
 - Provides a dependency-free browser UI with Markdown rendering, conversation history in browser `localStorage`, editable/regeneratable messages, a persistent system prompt, activity status, and cancellation of generation.
 - Provides an optional hold-to-speak voice interface. It streams microphone audio to a local realtime speech-to-text service, sends final transcripts through the Fast chat pipeline, and streams generated speech back to the browser.
 
@@ -82,7 +86,8 @@ backend/
   manager/       Chat API, model lifecycle, planner, configuration, retrieval orchestration
   web/
     Server/      Browser UI and small HTTP/SSE gateway
-    firecrawl/   Search, fetch, extraction, chunking, and web reranking
+    firecrawl/   Firecrawl search integration, page extraction helpers, chunking, and web reranking
+    fastcrw/     fastCRW renderer configuration used by the web retrieval service
   audio/         WebSocket voice proxy and Supertonic streaming integration
 Diary/           Diary import, metadata, profile, embedding, and retrieval tools
 ```
@@ -95,6 +100,7 @@ The active voice entry point is `backend/audio/voice_proxy.py`.
 | --- | ---: | --- |
 | llama.cpp | `8081` | Local model server, launched by the chat proxy |
 | Chat proxy | `9000` | OpenAI-compatible chat API and shared orchestration |
+| fastCRW | `3001` | Local webpage scraping service used by web retrieval |
 | Realtime STT | `8080` | Local speech recognition service used by voice |
 | Voice proxy | `9100` | Browser WebSocket, chat streaming, and TTS adapter |
 | Web UI | `3000` | Browser app and same-origin API gateway |
@@ -116,10 +122,10 @@ Before starting the chat proxy, prepare the following:
 1. Python and the dependencies required by the modules you enable.
 2. A compatible llama.cpp build with `llama-server` and the configured Qwen 3.6 35B A3B model and chat template.
 3. Diary runtime artifacts expected by `Diary/memory_retriever.py`: `LJDB_FR.db`, `memory.index`, `memory_mapping.json`, the embedding model available locally, and any profiles used by your data.
-4. A Firecrawl API key and the Firecrawl/Python dependencies for web retrieval. If web retrieval is not configured, planner requests requiring it will not work.
+4. A Firecrawl API key and a running fastCRW service for web retrieval. The fastCRW endpoint defaults to `http://127.0.0.1:3001` and can be changed with `FASTCRW_URL`. If web retrieval is not configured, planner requests requiring it will not work.
 5. For voice only: the realtime STT service and the Supertonic 3 model/voice assets. Download the assets into the `backend/audio/tts/` folder; the configured model directory is `backend/audio/tts/assets/`.
 
-`backend/manager/config.json` is the central configuration file for model paths, endpoints, ports, pipeline limits, web search, voice, and TTS. It currently contains host-specific model paths and a placeholder Firecrawl key. Update it for your machine before running the service. The diary retriever also expects its database and generated index files at paths relative to `Diary/`; those data files are not included in this checkout.
+`backend/manager/config.json` is the central configuration file for model paths, endpoints, ports, pipeline limits, web search, voice, and TTS. Each pipeline can set `max_planner_prompt_length`, measured in characters. The checked-in Normal value is `50000`; a Normal planner prompt longer than that bypasses the planner and retrieval. Fast is configured with `0` and always bypasses the planner independently of that limit. It currently contains a placeholder Firecrawl key and llama.cpp path. Update it for your machine before running the service. The diary retriever also expects its database and generated index files at paths relative to `Diary/`; those data files are not included in this checkout.
 
 Diary databases, indexes, profiles, model files, and API keys are private/local data.
 
@@ -177,13 +183,13 @@ curl -N http://127.0.0.1:9000/v1/chat/completions \
     "model": "gpt",
     "pipeline": "normal",
     "stream": true,
-    "messages": [{"role": "user", "content": "Hello, Jarvis."}]
+    "messages": [{"role": "user", "content": "Hello, Albert."}]
   }'
 ```
 
-The stream contains OpenAI-compatible model chunks and Jarvis status events for stages such as planning, diary retrieval, web retrieval, reranking, thinking, and generation. The UI understands those status events and displays them in its activity timeline. The proxy also exposes `/v1/models` and `/health`.
+The stream contains OpenAI-compatible model chunks and Albert status events for stages such as planning, diary retrieval, web retrieval, reranking, thinking, and generation. The UI understands those status events and displays them in its activity timeline. The proxy also exposes `/v1/models` and `/health`.
 
-The browser app stores conversations and its selected pipeline/system prompt in that browser's local storage. They are not stored by a server-side conversation database. Chat messages are sent to the local chat API; if web retrieval is selected, search queries go through Firecrawl and retrieved pages are fetched locally for context.
+The browser app stores conversations and its selected pipeline/system prompt in that browser's local storage. They are not stored by a server-side conversation database. Chat messages are sent to the local chat API; if web retrieval is selected, search queries go through Firecrawl and retrieved pages are fetched locally by fastCRW for context.
 
 ## Diary data preparation
 

@@ -120,7 +120,7 @@ def rerank_memory(query, retrieval, top_k=12):
     ###########################################################################
     # Rebuild retrieval
     #
-    # Keep the original entry objects so the rest of Jarvis can still access:
+    # Keep the original entry objects so the rest of Albert can still access:
     #
     #     entry["id"]
     #     entry["date"]

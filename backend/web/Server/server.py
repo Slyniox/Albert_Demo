@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Jarvis web gateway.
+Albert web gateway.
 
 Serves the frontend on :3000 and proxies OpenAI-compatible SSE
-requests to the existing Jarvis proxy on localhost:9000.
+requests to the existing Albert proxy on localhost:9000.
 
 No third-party Python packages are required.
 """
@@ -173,7 +173,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    print(f"Jarvis Web UI : http://0.0.0.0:{PORT}")
-    print(f"Jarvis Proxy   : {PROXY_URL}")
+    print(f"Albert Web UI : http://0.0.0.0:{PORT}")
+    print(f"Albert Proxy   : {PROXY_URL}")
     print("Press Ctrl+C to stop.")
     ThreadingHTTPServer((HOST, PORT), Handler).serve_forever()

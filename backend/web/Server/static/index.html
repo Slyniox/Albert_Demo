@@ -3,26 +3,28 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#090b0e">
-  <meta name="description" content="Jarvis local AI assistant">
-  <title>Jarvis</title>
+  <meta name="theme-color" content="#090a0b">
+  <meta name="description" content="Albert local AI assistant">
+  <title>Albert</title>
   <link rel="stylesheet" href="/static/css/app.css">
 </head>
 <body>
   <div class="app-shell">
-    <aside class="sidebar" id="sidebar">
+    <aside class="sidebar" id="sidebar" aria-label="Conversation navigation" aria-hidden="false">
       <div class="sidebar-header">
-        <div class="brand-mark" aria-hidden="true">J</div>
+        <div class="brand-mark" aria-hidden="true">A</div>
         <div class="brand-copy">
-          <div class="brand-name">JARVIS</div>
+          <div class="brand-name">ALBERT</div>
           <div class="brand-subtitle">LOCAL INTELLIGENCE</div>
         </div>
-        <button class="voice-mode-button" id="voice-mode-button" type="button" aria-label="Voice mode" title="Voice mode"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14.5a3.5 3.5 0 0 0 3.5-3.5V6a3.5 3.5 0 0 0-7 0v5a3.5 3.5 0 0 0 3.5 3.5Zm6-3.5a1 1 0 0 0-2 0 4 4 0 0 1-8 0 1 1 0 0 0-2 0 6 6 0 0 0 5 5.91V19H8a1 1 0 0 0 0 2h8a1 1 0 0 0 0-2h-3v-2.09A6 6 0 0 0 18 11Z"/></svg></button>
+        <button class="voice-mode-button" data-open-voice type="button" aria-label="Voice mode" title="Voice mode">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14.5a3.5 3.5 0 0 0 3.5-3.5V6a3.5 3.5 0 0 0-7 0v5a3.5 3.5 0 0 0 3.5 3.5Zm6-3.5a1 1 0 0 0-2 0 4 4 0 0 1-8 0 1 1 0 0 0-2 0 6 6 0 0 0 5 5.91V19H8a1 1 0 0 0 0 2h8a1 1 0 0 0 0-2h-3v-2.09A6 6 0 0 0 18 11Z"/></svg>
+        </button>
         
       </div>
 
       <button class="new-chat-button" id="new-chat">
-        <span class="plus">+</span>
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
         <span>New conversation</span>
       </button>
 
@@ -46,7 +48,9 @@
 
     <section class="chat-panel">
       <header class="topbar">
-        <button class="icon-button mobile-menu" id="open-sidebar" aria-label="Open menu">☰</button>
+        <button class="icon-button sidebar-toggle" id="open-sidebar" type="button" aria-label="Collapse sidebar" title="Collapse sidebar" aria-controls="sidebar" aria-expanded="true">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
 
         <div class="topbar-title">
           <button class="conversation-title-button" id="conversation-title" type="button" title="Rename conversation">
@@ -64,18 +68,22 @@
         <div class="chat-content" id="chat-content">
           <section class="welcome" id="welcome">
             <div class="orb">
-              <div class="orb-core">J</div>
+              <div class="orb-core">A</div>
             </div>
             <h1>Good to see you.</h1>
-            <p>Ask Jarvis anything. Your conversation stays on your local system.</p><button class="voice-mode-button" id="voice-mode-button" type="button" aria-label="Voice mode" title="Voice mode"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14.5a3.5 3.5 0 0 0 3.5-3.5V6a3.5 3.5 0 0 0-7 0v5a3.5 3.5 0 0 0 3.5 3.5Zm6-3.5a1 1 0 0 0-2 0 4 4 0 0 1-8 0 1 1 0 0 0-2 0 6 6 0 0 0 5 5.91V19H8a1 1 0 0 0 0 2h8a1 1 0 0 0 0-2h-3v-2.09A6 6 0 0 0 18 11Z"/></svg></button>
+            <p>Ask Albert anything. Your conversation stays on your local system.</p>
+            <button class="welcome-voice-button" data-open-voice type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14.5a3.5 3.5 0 0 0 3.5-3.5V6a3.5 3.5 0 0 0-7 0v5a3.5 3.5 0 0 0 3.5 3.5Zm6-3.5a1 1 0 0 0-2 0 4 4 0 0 1-8 0 1 1 0 0 0-2 0 6 6 0 0 0 5 5.91V19H8a1 1 0 0 0 0 2h8a1 1 0 0 0 0-2h-3v-2.09A6 6 0 0 0 18 11Z"/></svg>
+              <span>Try voice mode</span>
+            </button>
             <div class="suggestions">
-              <button type="button" data-prompt="Search my diary">Search my diary</button>
+              <button type="button" data-prompt="Cherche dans mon journal">Cherche dans mon journal</button>
               <button type="button" data-prompt="Search the web">Search the web</button>
             </div>
           </section>
         </div>
         <button class="jump-to-latest" id="jump-to-latest" type="button" aria-label="Jump to latest message" title="Jump to latest message">
-          ↓
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m-7-7 7 7 7-7"/></svg>
         </button>
       </main>
 
@@ -88,19 +96,36 @@
             </div>
             <button type="button" class="system-prompt-clear" id="system-prompt-clear">Clear</button>
           </div>
-          <textarea id="system-prompt-input" rows="4" maxlength="12000" placeholder="Tell Jarvis how it should behave…"></textarea>
+          <textarea id="system-prompt-input" rows="4" maxlength="12000" placeholder="Tell Albert how it should behave…"></textarea>
           <div class="system-prompt-actions">
             <button type="button" class="system-prompt-save" id="system-prompt-save">Save</button>
           </div>
         </div>
         <button class="system-prompt-button" id="system-prompt-button" type="button" title="System prompt" aria-label="System prompt">
-          <span>⚙</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.61-.22l-2.39.96a7.3 7.3 0 0 0-1.63-.94l-.36-2.52a.48.48 0 0 0-.48-.4h-3.84a.48.48 0 0 0-.48.4L9.22 5.32c-.59.23-1.13.55-1.63.94l-2.39-.96a.5.5 0 0 0-.61.22L2.67 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.04.3-.07.62-.07.94s.03.64.07.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.12.21.37.3.61.22l2.39-.96c.49.39 1.04.71 1.63.94l.36 2.52a.48.48 0 0 0 .48.4h3.84a.48.48 0 0 0 .48-.4l.36-2.52c.59-.23 1.14-.55 1.63-.94l2.39.96c.24.09.49 0 .61-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>
           <span>System prompt</span>
         </button>
         <form class="composer" id="composer">
           <div class="effort-selector-wrap">
-            <label class="sr-only" for="effort-selector">Response mode</label>
-            <select id="effort-selector" class="effort-selector" aria-label="Response mode" title="Response mode">
+            <button class="effort-menu-button" id="effort-menu-button" type="button" aria-label="Response mode: Normal" aria-haspopup="listbox" aria-expanded="false" aria-controls="effort-menu">
+              <span class="effort-mode-indicator" aria-hidden="true"></span>
+              <span id="effort-current-label">Normal</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
+            </button>
+            <div class="effort-menu" id="effort-menu" role="listbox" aria-label="Response mode" hidden>
+              <div class="effort-menu-heading">Choose a response mode</div>
+              <div class="effort-option" id="effort-option-normal" role="option" aria-selected="true" tabindex="-1" data-effort="normal">
+                <span class="effort-option-indicator normal" aria-hidden="true"></span>
+                <span class="effort-option-copy"><strong>Normal</strong><small>Balanced responses</small></span>
+                <svg class="effort-option-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+              </div>
+              <div class="effort-option" id="effort-option-fast" role="option" aria-selected="false" tabindex="-1" data-effort="fast">
+                <span class="effort-option-indicator fast" aria-hidden="true"></span>
+                <span class="effort-option-copy"><strong>Fast</strong><small>Quicker responses</small></span>
+                <svg class="effort-option-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+              </div>
+            </div>
+            <select id="effort-selector" class="sr-only" aria-hidden="true" tabindex="-1">
               <option value="normal">Normal</option>
               <option value="fast">Fast</option>
             </select>
@@ -110,12 +135,12 @@
             rows="1"
             maxlength="20000"
             autocomplete="off"
-            placeholder="Message Jarvis…"
-            aria-label="Message Jarvis"
+            placeholder="Message Albert…"
+            aria-label="Message Albert"
           ></textarea>
           <button class="send-button" id="send-button" type="submit" aria-label="Send message" title="Send message">
-            <span class="send-icon" aria-hidden="true">↑</span>
-            <span class="stop-icon" aria-hidden="true">■</span>
+            <svg class="send-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-7 7 7-7 7 7"/></svg>
+            <svg class="stop-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>
           </button>
         </form>
         <div class="composer-hint">Enter to send · Shift + Enter for a new line</div>
@@ -123,9 +148,24 @@
     </section>
   </div>
 
-  <script type="module" src="/static/js/app.js"></script>
+  <dialog class="rename-dialog" id="rename-dialog" aria-labelledby="rename-dialog-title" aria-describedby="rename-dialog-description">
+    <form class="rename-form" id="rename-form">
+      <div class="rename-dialog-kicker"><span class="rename-dialog-mark" aria-hidden="true">J</span> Conversation settings</div>
+      <h2 id="rename-dialog-title">Rename conversation</h2>
+      <p id="rename-dialog-description">Choose a name that helps you find this chat later.</p>
+      <label class="rename-label" for="rename-input">Conversation name</label>
+      <input id="rename-input" class="rename-input" type="text" maxlength="100" autocomplete="off" aria-describedby="rename-dialog-description rename-error">
+      <div class="rename-field-error" id="rename-error" hidden>Enter a conversation name to continue.</div>
+      <div class="rename-actions">
+        <button class="rename-cancel" id="rename-cancel" type="button">Cancel</button>
+        <button class="rename-save" type="submit">Save name</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="/static/js/app.js?v=20261013-ux2"></script>
 <section class="voice-mode-page" id="voice-mode-page" aria-hidden="true">
-<header class="voice-mode-topbar"><button class="voice-back-button" id="voice-back-button" type="button">←</button><div class="voice-mode-title">Voice Mode</div><div class="voice-mode-status" id="voice-mode-status">Ready</div></header>
+<header class="voice-mode-topbar"><button class="voice-back-button" id="voice-back-button" type="button" aria-label="Back to chat" title="Back to chat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button><div class="voice-mode-title">Voice mode</div><div class="voice-mode-status" id="voice-mode-status">Ready</div></header>
 <main class="voice-mode-main"><div class="voice-mode-orb-wrap"><div class="voice-mode-ripple"></div><div class="voice-mode-ripple"></div><div class="voice-mode-ripple"></div>
 <button class="voice-hold-button" id="voice-hold-button" type="button" aria-label="Hold to speak"><span class="voice-bubble-core" aria-hidden="true"></span></button></div>
 <div class="voice-mode-instruction" id="voice-mode-instruction">Hold to speak</div><div class="voice-mode-transcript" id="voice-mode-transcript"></div></main></section></body>
