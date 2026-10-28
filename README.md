@@ -13,6 +13,7 @@ where a lightweight model predicts which sources of context will be useful for a
 The goal is to reduce the latency introduced by retrieval while preserving
 the benefits of tool-augmented generation.
 
+https://github.com/user-attachments/assets/15d56572-3b63-46e9-aa93-aca2dd95fc2b
 
 ## Architecture
 ```
